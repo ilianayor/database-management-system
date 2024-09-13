@@ -1,0 +1,3 @@
+person(id:int,name:date default 15.08.2024)
+student(id:int,name:string default pesho)
+big(id:int,name:string default "pesho",birthdate:date default 15.08.2024)
