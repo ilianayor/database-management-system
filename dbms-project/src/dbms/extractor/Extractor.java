@@ -1,9 +1,12 @@
 package dbms.extractor;
 
 import dbms.SupportedType;
+import dbms.clause.Clause;
 import dbms.executor.table.Column;
 import dbms.strings.StringUtils;
 import dbms.validator.table.TableValidator;
+
+import java.util.Arrays;
 
 public class Extractor {
     public static Column[] extractColumns(String str) {
@@ -45,7 +48,7 @@ public class Extractor {
         int indexOfOpeningBracket = StringUtils.indexOf(str, '(');
         int indexOfClosingBracket = StringUtils.indexOf(str, ')');
 
-        if(indexOfOpeningBracket == -1 || indexOfClosingBracket == -1) {
+        if (indexOfOpeningBracket == -1 || indexOfClosingBracket == -1) {
             return str;
         }
 
@@ -54,6 +57,20 @@ public class Extractor {
         }
 
         return StringUtils.substring(str, indexOfOpeningBracket + 1, indexOfClosingBracket);
+    }
+
+    public static Clause extractClause(String clause) {
+        boolean shouldNegate = StringUtils.startsWith(clause, "not");
+        String[] clauseParts;
+
+        if (shouldNegate) {
+            clauseParts = extractArgs(clause);
+            clauseParts = StringUtils.split(clauseParts[0], '=');
+        } else {
+            clauseParts = StringUtils.split(clause, '=');
+        }
+
+        return Clause.build(clauseParts[0], clauseParts[1], shouldNegate);
     }
 }
 

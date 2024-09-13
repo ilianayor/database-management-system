@@ -15,6 +15,22 @@ public enum SupportedType {
 
     private final String value;
 
+    public static boolean isOfType(SupportedType supportedType, String toCheck) {
+        try {
+            if (supportedType == INTEGER) {
+                return isInteger(toCheck);
+            } else if (supportedType == STRING) {
+                return isString(toCheck);
+            } else if (supportedType == DATE) {
+                return isDate(toCheck);
+            }
+
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static boolean isInteger(String toCheck) {
         try {
             Integer.parseInt(toCheck);

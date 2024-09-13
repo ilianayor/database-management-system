@@ -72,4 +72,22 @@ public class FileSystemExecutor {
             throw new InvalidOperationException("update metadata failed", e);
         }
     }
+
+    public static String[] loadInMemory(String fileName) throws InvalidOperationException {
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(String.valueOf(Path.of(fileName))))) {
+            String[] lines =  new String[countNumberOfLines(fileName)];
+            int index = 0;
+            String line;
+
+            while ((line = bufferedReader.readLine()) != null) {
+                if (!line.isEmpty()) {
+                    lines[index++] = line;
+                }
+            }
+
+            return lines;
+        } catch (Exception e) {
+            throw new InvalidOperationException("update metadata failed", e);
+        }
+    }
 }

@@ -91,4 +91,18 @@ public class StringUtils {
 
         return true;
     }
+
+    public static String[] collectFromIndex(String[] array, int index) {
+        if (index < 0 || index >= array.length) {
+            return array;
+        }
+        String[] result = new String[array.length - index];
+        int idx = 0;
+
+        for (int i = index; i < array.length; i++) {
+            result[idx++] = array[i];
+        }
+
+        return result;
+    }
 }

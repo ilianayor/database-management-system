@@ -1,6 +1,8 @@
 package dbms.executor;
 
+import dbms.Printer;
 import dbms.SuccessMessages;
+import dbms.clause.Clause;
 import dbms.command.Command;
 import dbms.command.CommandParser;
 import dbms.command.Pair;
@@ -54,6 +56,8 @@ public class Executor {
             executeTableInfo(pair);
         } else if (pair.getCommandName().equals(Command.INSERT.toString())) {
             executeInsert(pair);
+        } else if (pair.getCommandName().equals(Command.DELETE.toString())) {
+            executeDelete(pair);
         }
     }
 
@@ -110,5 +114,23 @@ public class Executor {
 
         this.queryExecutor.insert(tableName, dataPairs, defaultValues);
         System.out.println(SUCCESSFUL_ROW_INSERTION);
+    }
+
+    private void executeDelete(Pair pair) throws InvalidOperationException {
+        String[] p = StringUtils.split(pair.getArgs(), ' ');
+        Clause clause = Extractor.extractClause(p[p.length - 1]);
+        String tableName = p[1];
+        String[] lines = FileSystemExecutor.loadInMemory(tableName);
+        Printer.printArr(lines);
+//        String[] parts = StringUtils.split(pair.getArgs(), ' ');
+//        String tableName = parts[1];
+//        String[] args = Extractor.extractArgs(parts[2]);
+//        DataPair[] dataPairs = DataPair.calculate(args);
+//        String tableMetadata = MetadataHandler.extractTableMetadata(tableName);
+//        Column[] columns = Extractor.extractColumns(tableMetadata);
+//        String[] defaultValues = metadataHandler.extractDefaultValues(dataPairs.length, columns);
+//
+//        this.queryExecutor.insert(tableName, dataPairs, defaultValues);
+//        System.out.println(SUCCESSFUL_ROW_INSERTION);
     }
 }
