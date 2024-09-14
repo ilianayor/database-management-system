@@ -31,6 +31,18 @@ public enum SupportedType {
         }
     }
 
+    public static SupportedType getSupportedType(String toCheck) {
+        if (isOfType(SupportedType.INTEGER, toCheck)) {
+            return INTEGER;
+        } else if (isOfType(SupportedType.STRING, toCheck)) {
+            return STRING;
+        } else if (isOfType(SupportedType.DATE, toCheck)) {
+            return DATE;
+        }
+
+        return UNKNOWN;
+    }
+
     public static boolean isInteger(String toCheck) {
         try {
             Integer.parseInt(toCheck);
@@ -54,7 +66,7 @@ public enum SupportedType {
         }
     }
 
-    public static SupportedType toDefaultType(String str) {
+    public static SupportedType toSupportedType(String str) {
         for (SupportedType supportedType : SupportedType.values()) {
             if (str.equals(supportedType.toString())) {
                 return supportedType;

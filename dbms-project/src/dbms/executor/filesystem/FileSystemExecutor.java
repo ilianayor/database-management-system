@@ -32,7 +32,18 @@ public class FileSystemExecutor {
         try (FileWriter writer = new FileWriter(fileName, true)) {
             writer.write(str);
         } catch (Exception e) {
-            throw new InvalidOperationException("failed to write to metadata file");
+            throw new InvalidOperationException("failed to write to file");
+        }
+    }
+
+    public static void override(String fileName, String[] lines) throws InvalidOperationException {
+        try (FileWriter writer = new FileWriter(fileName, false)) {
+            for (String line : lines) {
+                writer.write(line);
+                writer.write(System.lineSeparator());
+            }
+        } catch (Exception e) {
+            throw new InvalidOperationException("failed to write to file");
         }
     }
 
@@ -75,7 +86,7 @@ public class FileSystemExecutor {
 
     public static String[] loadInMemory(String fileName) throws InvalidOperationException {
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(String.valueOf(Path.of(fileName))))) {
-            String[] lines =  new String[countNumberOfLines(fileName)];
+            String[] lines = new String[countNumberOfLines(fileName)];
             int index = 0;
             String line;
 

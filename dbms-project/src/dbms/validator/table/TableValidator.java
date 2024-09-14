@@ -94,7 +94,7 @@ public class TableValidator {
 
     private static void validateDefaultValueType(String columnType, String defaultValue, String line) throws InvalidCreateTableArgsException {
         try {
-            SupportedType supportedType = SupportedType.toDefaultType(columnType);
+            SupportedType supportedType = SupportedType.toSupportedType(columnType);
 
             if (supportedType == SupportedType.UNKNOWN) {
                 throw new InvalidCreateTableArgsException("invalid default type: [" + line + "]");

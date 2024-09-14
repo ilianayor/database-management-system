@@ -1,34 +1,47 @@
 package dbms.clause;
 
+import java.util.Objects;
+
 public class Clause {
-    private final String colName;
-    private final String value;
-    private final boolean shouldNegate;
+    private final TypeValuePair typeValuePair;
+    private final Sign sign;
 
-    private Clause(String colName, String value, boolean shouldNegate) {
-        this.colName = colName;
-        this.value = value;
-        this.shouldNegate = shouldNegate;
+    private Clause(TypeValuePair typeValuePair, Sign sign) {
+        this.typeValuePair = typeValuePair;
+        this.sign = sign;
     }
 
-    public static Clause build(String colName, String value, boolean shouldNegate) {
-        return new Clause(colName, value, shouldNegate);
+    public static Clause build(TypeValuePair typeValuePair, Sign sign) {
+        return new Clause(typeValuePair, sign);
     }
 
-    public String getValue() {
-        return value;
+    public static Clause empty() {
+        return new Clause(null, Sign.UNKNOWN);
     }
 
-    public String getColName() {
-        return colName;
+    public TypeValuePair getTypeValuePair() {
+        return typeValuePair;
     }
 
-    public boolean getShouldNegate() {
-        return shouldNegate;
+    public Sign getSign() {
+        return sign;
     }
 
     @Override
     public String toString() {
-        return colName + " " + value + " " + shouldNegate;
+        return typeValuePair.getColName() + " " + typeValuePair.getValue();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Clause clause = (Clause) o;
+        return Objects.equals(typeValuePair, clause.typeValuePair) && sign == clause.sign;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(typeValuePair, sign);
     }
 }

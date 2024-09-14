@@ -2,6 +2,7 @@ package dbms.validator.query;
 
 import dbms.SupportedType;
 import dbms.clause.Clause;
+import dbms.clause.Sign;
 import dbms.exceptions.InvalidArgsException;
 import dbms.executor.filesystem.FileSystemExecutor;
 import dbms.executor.metadata.MetadataHandler;
@@ -51,11 +52,16 @@ public class DeleteValidator {
     }
 
     private static void validateWhereClause(String clauseStr, String tableName) throws InvalidArgsException {
-        if (StringUtils.indexOf(clauseStr, EQUALS_SIGN) == -1) {
-            throw new InvalidArgsException("expected '=' sign in clause");
+        Clause clause = Extractor.extractClause(clauseStr);
+
+        if (clause.getSign() == Sign.UNKNOWN) {
+            throw new InvalidArgsException("sign in where clause is unknown");
         }
 
-        Clause clause = Extractor.extractClause(clauseStr);
+        if (clause.getTypeValuePair().getSupportedType() == SupportedType.UNKNOWN) {
+            throw new InvalidArgsException("unsupported value type");
+        }
+
         String tableMetadata;
         try {
             tableMetadata = MetadataHandler.extractTableMetadata(tableName);
@@ -68,8 +74,8 @@ public class DeleteValidator {
         boolean found = false;
 
         for (Column c : columns) {
-            if (c.getName().equals(clause.getColName())) {
-                if (!SupportedType.isOfType(c.getSupportedType(), clause.getValue())) {
+            if (c.getName().equals(clause.getTypeValuePair().getColName())) {
+                if (!SupportedType.isOfType(c.getSupportedType(), clause.getTypeValuePair().getValue())) {
                     throw new InvalidArgsException("invalid clause value type");
                 } else {
                     found = true;

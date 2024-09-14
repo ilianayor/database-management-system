@@ -1,7 +1,10 @@
 package dbms.extractor;
 
+import dbms.Printer;
 import dbms.SupportedType;
 import dbms.clause.Clause;
+import dbms.clause.Sign;
+import dbms.clause.TypeValuePair;
 import dbms.executor.table.Column;
 import dbms.strings.StringUtils;
 import dbms.validator.table.TableValidator;
@@ -18,7 +21,7 @@ public class Extractor {
             String[] columnParts = StringUtils.split(columnsAsString[i], ' ');
 
             String[] columnPair = StringUtils.split(columnParts[0], ':');
-            SupportedType columnType = SupportedType.toDefaultType(columnPair[1]);
+            SupportedType columnType = SupportedType.toSupportedType(columnPair[1]);
             String columnName = columnPair[0];
 
             if (columnParts.length == TableValidator.VALID_COLUMN_NUMBER_ARGS_NO_DEFAULT) {
@@ -60,17 +63,66 @@ public class Extractor {
     }
 
     public static Clause extractClause(String clause) {
-        boolean shouldNegate = StringUtils.startsWith(clause, "not");
-        String[] clauseParts;
-
-        if (shouldNegate) {
-            clauseParts = extractArgs(clause);
-            clauseParts = StringUtils.split(clauseParts[0], '=');
-        } else {
-            clauseParts = StringUtils.split(clause, '=');
+        if (StringUtils.startsWith(clause, "not")) {
+            String[] clauseParts = extractArgs(clause);
+            return extractClauseImpl(clauseParts[0], true);
         }
 
-        return Clause.build(clauseParts[0], clauseParts[1], shouldNegate);
+        return extractClauseImpl(clause, false);
+    }
+
+    private static Clause extractClauseImpl(String str, boolean shouldNegate) {
+        String[] parts = new String[]{};
+        Sign sign = Sign.UNKNOWN;
+
+        if (StringUtils.contains(str, Sign.LESS_THAN_OR_EQUALS.getValue())) {
+            sign = Sign.LESS_THAN_OR_EQUALS;
+            parts = StringUtils.split(str, Sign.LESS_THAN_OR_EQUALS.getValue());
+        } else if (StringUtils.contains(str, Sign.GREATER_THAN_OR_EQUALS.getValue())) {
+            sign = Sign.GREATER_THAN_OR_EQUALS;
+            parts = StringUtils.split(str, Sign.GREATER_THAN_OR_EQUALS.getValue());
+        } else if (StringUtils.contains(str, Sign.NOT_EQUALS.getValue())) {
+            sign = Sign.NOT_EQUALS;
+            parts = StringUtils.split(str, Sign.NOT_EQUALS.getValue());
+        } else if (StringUtils.contains(str, Sign.EQUALS.getValue())) {
+            sign = Sign.EQUALS;
+            parts = StringUtils.split(str, Sign.EQUALS.getValue());
+        } else if (StringUtils.contains(str, Sign.LESS_THAN.getValue())) {
+            sign = Sign.LESS_THAN;
+            parts = StringUtils.split(str, Sign.LESS_THAN.getValue());
+        } else if (StringUtils.contains(str, Sign.GREATER_THAN.getValue())) {
+            sign = Sign.GREATER_THAN;
+            parts = StringUtils.split(str, Sign.GREATER_THAN.getValue());
+        }
+
+        if (shouldNegate) {
+            sign = negateSign(sign);
+        }
+
+        if (sign == Sign.UNKNOWN) {
+            return Clause.empty();
+        }
+
+        TypeValuePair typeValuePair = TypeValuePair.of(parts[0], parts[1], SupportedType.getSupportedType(parts[1]));
+        return Clause.build(typeValuePair, sign);
+    }
+
+    private static Sign negateSign(Sign sign) {
+        if (sign == Sign.EQUALS) {
+            sign = Sign.NOT_EQUALS;
+        } else if (sign == Sign.NOT_EQUALS) {
+            sign = Sign.EQUALS;
+        } else if (sign == Sign.LESS_THAN) {
+            sign = Sign.GREATER_THAN_OR_EQUALS;
+        } else if (sign == Sign.GREATER_THAN_OR_EQUALS) {
+            sign = Sign.LESS_THAN;
+        } else if (sign == Sign.GREATER_THAN) {
+            sign = Sign.LESS_THAN_OR_EQUALS;
+        } else if (sign == Sign.LESS_THAN_OR_EQUALS) {
+            sign = Sign.GREATER_THAN;
+        }
+
+        return sign;
     }
 }
 
