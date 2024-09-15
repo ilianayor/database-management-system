@@ -10,4 +10,8 @@ public class QueryValidator {
     public static void validateDelete(String args) throws InvalidArgsException {
         DeleteValidator.validateDelete(args);
     }
+
+    public static void validateSelect(String args) throws InvalidArgsException {
+        SelectValidator.validateSelect(args);
+    }
 }

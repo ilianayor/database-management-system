@@ -43,6 +43,8 @@ public class InputValidator {
             QueryValidator.validateInsert(pair.getArgs());
         } else if (pair.getCommandName().equals(Command.DELETE.toString())) {
             QueryValidator.validateDelete(pair.getArgs());
+        } else if (pair.getCommandName().equals(Command.SELECT.toString())) {
+            QueryValidator.validateSelect(pair.getArgs());
         }
     }
 }

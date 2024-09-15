@@ -238,10 +238,48 @@ public class StringUtils {
     }
 
     private static int min(int a, int b) {
-        if(a < b) {
+        if (a < b) {
             return a;
         }
 
         return b;
+    }
+
+    public static void sortLexicographically(String[] arr) {
+        int n = arr.length;
+
+        for (int i = 0; i < n - 1; i++) {
+            for (int j = 0; j < n - i - 1; j++) {
+                if (arr[j].compareTo(arr[j + 1]) > 0) {
+                    String temp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = temp;
+                }
+            }
+        }
+    }
+
+    public static int countUnique(String[] strings) {
+        if (strings == null) {
+            return 0;
+        }
+
+        if (strings.length == 1) {
+            return 1;
+        }
+
+        sortLexicographically(strings);
+        int cnt = 1;
+        String last = strings[0];
+
+        for (int i = 1; i < strings.length; i++) {
+            if (!last.equals(strings[i])) {
+                cnt++;
+            }
+
+            last = strings[i];
+        }
+
+        return cnt;
     }
 }

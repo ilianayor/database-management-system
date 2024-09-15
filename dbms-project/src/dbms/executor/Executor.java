@@ -18,6 +18,7 @@ import dbms.executor.table.Column;
 import dbms.executor.table.Table;
 import dbms.executor.table.TableExecutor;
 import dbms.extractor.Extractor;
+import dbms.keyword.Keyword;
 import dbms.strings.StringUtils;
 import dbms.validator.InputValidator;
 
@@ -66,6 +67,8 @@ public class Executor {
             executeInsert(pair);
         } else if (pair.getCommandName().equals(Command.DELETE.toString())) {
             executeDelete(pair);
+        } else if (pair.getCommandName().equals(Command.SELECT.toString())) {
+            executeSelect(pair);
         }
     }
 
@@ -128,7 +131,7 @@ public class Executor {
         String[] p = StringUtils.split(pair.getArgs(), ' ');
         String tableName = p[1];
 
-        if (StringUtils.contains(pair.getArgs(), "where")) {
+        if (StringUtils.contains(pair.getArgs(), Keyword.WHERE.getValue())) {
             Clause clause = Extractor.extractClause(p[p.length - 1]);
             String[] lines = FileSystemExecutor.loadInMemory(tableName);
             String tableMetadata = MetadataHandler.extractTableMetadata(tableName);
@@ -136,7 +139,7 @@ public class Executor {
             int indexOfClosingBracket = StringUtils.indexOf(tableMetadata, ')');
             Column[] columns = Extractor.extractColumns(StringUtils.substring(tableMetadata, indexOfOpeningBracket + 1, indexOfClosingBracket));
             TypeValuePair[][] pairs = match(lines, columns);
-            String[] toWrite = apply(clause, pairs);
+            String[] toWrite = applyDelete(clause, pairs);
 
             if (toWrite.length == 0) {
                 FileSystemExecutor.clear(tableName);
@@ -153,7 +156,171 @@ public class Executor {
         System.out.println("Rows affected: " + numberOfLines);
     }
 
-    private String[] apply(Clause clause, TypeValuePair[][] typeValuePairs) {
+    private void executeSelect(Pair pair) throws InvalidOperationException {
+        String[] parts = StringUtils.split(pair.getArgs(), ' ');
+        boolean containsWhere = StringUtils.contains(pair.getArgs(), Keyword.WHERE.getValue());
+
+        if (parts[0].equals(Keyword.STAR.getValue())) {
+            executeSelectAll(parts, containsWhere);
+        } else {
+            if (parts[0].equals(Keyword.DISTINCT.getValue())) {
+                parts = StringUtils.collectFromIndex(parts, 1);
+                executeSelectSpecificColumns(parts, containsWhere, true);
+            } else {
+                executeSelectSpecificColumns(parts, containsWhere, false);
+            }
+        }
+    }
+
+    private void executeSelectSpecificColumns(String[] parts, boolean containsWhere, boolean distinct) throws InvalidOperationException {
+        String[] cols = StringUtils.split(parts[0], ',');
+        String tableName = parts[2];
+        String[] lines = FileSystemExecutor.loadInMemory(tableName);
+        String tableMetadata = MetadataHandler.extractTableMetadata(tableName);
+        int indexOfOpeningBracket = StringUtils.indexOf(tableMetadata, '(');
+        int indexOfClosingBracket = StringUtils.indexOf(tableMetadata, ')');
+        Column[] columns = Extractor.extractColumns(StringUtils.substring(tableMetadata, indexOfOpeningBracket + 1, indexOfClosingBracket));
+        TypeValuePair[][] pairs = match(lines, columns);
+
+        if (containsWhere) {
+            Clause clause = Extractor.extractClause(parts[parts.length - 1]);
+            pairs = applySelectExtractTypeValuePairs(clause, pairs);
+        }
+
+        if (pairs.length == 0) {
+            return;
+        }
+
+        String[] transformedLines = transform(pairs, cols);
+
+        if (distinct) {
+            transformedLines = applyDistinct(transformedLines);
+        }
+
+        display(transformedLines);
+    }
+
+    private void display(String[] lines) {
+        for (String line : lines) {
+            System.out.println(line);
+        }
+    }
+
+    private String[] applyDistinct(String[] lines) {
+        int numberOfUniqueLines = StringUtils.countUnique(lines);
+        String[] result = new String[numberOfUniqueLines];
+        StringUtils.sortLexicographically(lines);
+
+        String last = lines[0];
+        int idx = 1;
+        result[0] = lines[0];
+
+        for (int i = 1; i < lines.length; i++) {
+            if (!last.equals(lines[i])) {
+                result[idx++] = lines[i];
+            }
+
+            last = lines[i];
+        }
+
+        return result;
+    }
+
+    private String[] transform(TypeValuePair[][] pairs, String[] colsInSelect) {
+        String[] result = new String[pairs.length];
+
+        for (int i = 0; i < pairs.length; i++) {
+            StringBuilder row = new StringBuilder();
+
+            for (int j = 0; j < colsInSelect.length; j++) {
+                String columnToSelect = colsInSelect[j];
+
+                for (TypeValuePair pair : pairs[i]) {
+                    if (pair.getColName().equals(columnToSelect)) {
+                        row.append(pair.getValue());
+                        break;
+                    }
+                }
+
+                if (j < colsInSelect.length - 1) {
+                    row.append(",");
+                }
+            }
+
+            result[i] = row.toString();
+        }
+
+        return result;
+    }
+
+    private String[] extractColOrderFromMetadata(TypeValuePair[] typeValuePairs) {
+        String[] result = new String[typeValuePairs.length];
+        int idx = 0;
+
+        for (TypeValuePair typeValuePair : typeValuePairs) {
+            result[idx++] = typeValuePair.getColName();
+        }
+        return result;
+    }
+
+    private void executeSelectAll(String[] parts, boolean containsWhere) throws InvalidOperationException {
+        String tableName = parts[2];
+        String[] lines = FileSystemExecutor.loadInMemory(tableName);
+
+        if (containsWhere) {
+            Clause clause = Extractor.extractClause(parts[parts.length - 1]);
+            String tableMetadata = MetadataHandler.extractTableMetadata(tableName);
+            int indexOfOpeningBracket = StringUtils.indexOf(tableMetadata, '(');
+            int indexOfClosingBracket = StringUtils.indexOf(tableMetadata, ')');
+            Column[] columns = Extractor.extractColumns(StringUtils.substring(tableMetadata, indexOfOpeningBracket + 1, indexOfClosingBracket));
+            TypeValuePair[][] pairs = match(lines, columns);
+            lines = applySelect(clause, pairs);
+        }
+
+        Printer.printArr(lines);
+    }
+
+    private String[] applySelect(Clause clause, TypeValuePair[][] typeValuePairs) {
+        int numberOfValidRows = countNumberOfValidRows(clause, typeValuePairs);
+        String[] validRows = new String[numberOfValidRows];
+        int index = 0;
+
+        for (TypeValuePair[] typeValuePair : typeValuePairs) {
+            for (int j = 0; j < typeValuePair.length; j++) {
+                if (typeValuePair[j].getColName().equals(clause.getTypeValuePair().getColName())) {
+                    if (isClauseApplicable(typeValuePair[j], clause)) {
+                        validRows[index++] = format(typeValuePair);
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        return validRows;
+    }
+
+    private TypeValuePair[][] applySelectExtractTypeValuePairs(Clause clause, TypeValuePair[][] typeValuePairs) {
+        int numberOfValidRows = countNumberOfValidRows(clause, typeValuePairs);
+        TypeValuePair[][] validRows = new TypeValuePair[numberOfValidRows][];
+        int index = 0;
+
+        for (TypeValuePair[] typeValuePair : typeValuePairs) {
+            for (int j = 0; j < typeValuePair.length; j++) {
+                if (typeValuePair[j].getColName().equals(clause.getTypeValuePair().getColName())) {
+                    if (isClauseApplicable(typeValuePair[j], clause)) {
+                        validRows[index++] = typeValuePair;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        return validRows;
+    }
+
+    private String[] applyDelete(Clause clause, TypeValuePair[][] typeValuePairs) {
         int numberOfValidRows = countNumberOfValidRows(clause, typeValuePairs);
         String[] validRows = new String[typeValuePairs.length - numberOfValidRows];
         int index = 0;

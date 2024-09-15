@@ -6,11 +6,11 @@ import dbms.executor.metadata.MetadataHandler;
 import dbms.executor.query.DataPair;
 import dbms.executor.query.Query;
 import dbms.extractor.Extractor;
+import dbms.keyword.Keyword;
 import dbms.strings.StringUtils;
 
 public class InsertValidator {
     private static final int VALID_NUMBER_OF_SPACES = 2;
-    private static final String INTO_KEYWORD = "into";
     private static final String VALUES_PREFIX = "values";
 
     public static void validateInsert(String args) throws InvalidArgsException {
@@ -30,7 +30,7 @@ public class InsertValidator {
     }
 
     private static void validateIntoKeyword(String str) throws InvalidArgsException {
-        if (!str.equals(INTO_KEYWORD)) {
+        if (!str.equals(Keyword.INTO.getValue())) {
             throw new InvalidArgsException("expected into");
         }
     }

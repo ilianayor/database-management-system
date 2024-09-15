@@ -7,6 +7,7 @@ public enum Command {
     TABLE_INFO("TableInfo"),
     INSERT("Insert"),
     DELETE("Delete"),
+    SELECT("Select"),
     QUIT("quit");
 
     private final String value;

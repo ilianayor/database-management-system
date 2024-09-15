@@ -8,13 +8,10 @@ import dbms.executor.filesystem.FileSystemExecutor;
 import dbms.executor.metadata.MetadataHandler;
 import dbms.executor.table.Column;
 import dbms.extractor.Extractor;
+import dbms.keyword.Keyword;
 import dbms.strings.StringUtils;
 
 public class DeleteValidator {
-    private static final String FROM_KEYWORD = "from";
-    private static final String WHERE_KEYWORD = "where";
-    private static final char EQUALS_SIGN = '=';
-
     public static void validateDelete(String args) throws InvalidArgsException {
         String[] parts = StringUtils.split(args, ' ');
         validateNumberOfArgs(parts);
@@ -34,7 +31,7 @@ public class DeleteValidator {
     }
 
     private static void validateFromKeyword(String str) throws InvalidArgsException {
-        if (!str.equals(FROM_KEYWORD)) {
+        if (!str.equals(Keyword.FROM.getValue())) {
             throw new InvalidArgsException("expected from keyword");
         }
     }
@@ -46,8 +43,8 @@ public class DeleteValidator {
     }
 
     private static void validateWhereKeyword(String str) throws InvalidArgsException {
-        if (!str.equals(WHERE_KEYWORD)) {
-            throw new InvalidArgsException("expected from keyword");
+        if (!str.equals(Keyword.WHERE.getValue())) {
+            throw new InvalidArgsException("expected where keyword");
         }
     }
 

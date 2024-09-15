@@ -40,6 +40,15 @@ public class TypeValuePair {
     }
 
     @Override
+    public String toString() {
+        return "TypeValuePair{" +
+                "colName='" + colName + '\'' +
+                ", value='" + value + '\'' +
+                ", supportedType=" + supportedType +
+                '}';
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(colName, value);
     }
