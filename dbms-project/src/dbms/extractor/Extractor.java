@@ -1,15 +1,13 @@
 package dbms.extractor;
 
-import dbms.Printer;
 import dbms.SupportedType;
 import dbms.clause.Clause;
 import dbms.clause.Sign;
 import dbms.clause.TypeValuePair;
 import dbms.executor.table.Column;
+import dbms.keyword.Keyword;
 import dbms.strings.StringUtils;
 import dbms.validator.table.TableValidator;
-
-import java.util.Arrays;
 
 public class Extractor {
     public static Column[] extractColumns(String str) {
@@ -63,7 +61,7 @@ public class Extractor {
     }
 
     public static Clause extractClause(String clause) {
-        if (StringUtils.startsWith(clause, "not")) {
+        if (StringUtils.startsWith(clause, Keyword.NOT.getValue())) {
             String[] clauseParts = extractArgs(clause);
             return extractClauseImpl(clauseParts[0], true);
         }

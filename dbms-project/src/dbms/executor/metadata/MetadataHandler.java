@@ -3,7 +3,6 @@ package dbms.executor.metadata;
 import dbms.exceptions.InvalidOperationException;
 import dbms.exceptions.table.create.TableCreationException;
 import dbms.executor.filesystem.FileSystemExecutor;
-import dbms.executor.query.DataPair;
 import dbms.executor.table.Column;
 import dbms.strings.StringUtils;
 
@@ -15,7 +14,7 @@ public class MetadataHandler {
     public static final String METADATA_FILE_NAME = "METADATA_FILE";
 
     static {
-        if (!FileSystemExecutor.existFileWithName(METADATA_FILE_NAME)) {
+        if (!FileSystemExecutor.existsFileWithName(METADATA_FILE_NAME)) {
             try {
                 FileSystemExecutor.createFile(METADATA_FILE_NAME);
             } catch (TableCreationException e) {
@@ -29,7 +28,7 @@ public class MetadataHandler {
             FileSystemExecutor.append(METADATA_FILE_NAME, args);
             FileSystemExecutor.append(METADATA_FILE_NAME, System.lineSeparator());
         } catch (Exception e) {
-            throw new InvalidOperationException("metadata file update failed", e);
+            throw new InvalidOperationException("Failed to update metadata file with new table.", e);
         }
     }
 
@@ -48,8 +47,9 @@ public class MetadataHandler {
 
             FileSystemExecutor.clear(METADATA_FILE_NAME);
             FileSystemExecutor.append(METADATA_FILE_NAME, sb.toString());
+
         } catch (Exception e) {
-            throw new InvalidOperationException("update metadata failed", e);
+            throw new InvalidOperationException("Failed to update metadata file by removing table: " + tableName, e);
         }
     }
 
@@ -66,8 +66,9 @@ public class MetadataHandler {
             }
 
             return result;
+
         } catch (Exception e) {
-            throw new InvalidOperationException("update metadata failed", e);
+            throw new InvalidOperationException("Failed to extract table names from metadata.", e);
         }
     }
 
@@ -83,7 +84,7 @@ public class MetadataHandler {
 
             return "";
         } catch (Exception e) {
-            throw new InvalidOperationException("table metadata read failed", e);
+            throw new InvalidOperationException("Failed to extract metadata of table: " + tableName, e);
         }
     }
 

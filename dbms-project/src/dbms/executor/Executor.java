@@ -22,7 +22,6 @@ import dbms.keyword.Keyword;
 import dbms.strings.StringUtils;
 import dbms.validator.InputValidator;
 
-import java.io.StringReader;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
@@ -39,8 +38,8 @@ public class Executor {
     public Executor() {
         this.commandParser = new CommandParser();
         this.tableExecutor = new TableExecutor();
-        this.metadataHandler = new MetadataHandler();
         this.queryExecutor = new QueryExecutor();
+        this.metadataHandler = new MetadataHandler();
     }
 
     public void execute(String line) {
@@ -60,7 +59,7 @@ public class Executor {
         } else if (pair.getCommandName().equals(Command.DROP_TABLE.toString())) {
             executeDropTable(pair);
         } else if (pair.getCommandName().equals(Command.LIST_TABLES.toString())) {
-            executeListTables(pair);
+            executeListTables();
         } else if (pair.getCommandName().equals(Command.TABLE_INFO.toString())) {
             executeTableInfo(pair);
         } else if (pair.getCommandName().equals(Command.INSERT.toString())) {
@@ -88,7 +87,7 @@ public class Executor {
         System.out.println(SuccessMessages.SUCCESSFUL_TABLE_DELETION);
     }
 
-    private void executeListTables(Pair pair) throws InvalidOperationException {
+    private void executeListTables() throws InvalidOperationException {
         StringBuilder sb = new StringBuilder();
         String[] tables = this.metadataHandler.extractMetadataTableNames();
 
@@ -101,23 +100,26 @@ public class Executor {
 
     private void executeTableInfo(Pair pair) throws InvalidOperationException {
         String[] tables = this.metadataHandler.extractMetadataTableNames();
-
         for (String table : tables) {
             if (table.equals(pair.getArgs())) {
                 long fileSize = FileSystemExecutor.getFileSize(table);
                 int records = FileSystemExecutor.countNumberOfLines(table);
-                System.out.println(table + ", " + fileSize + ", " + records);
+                System.out.println("Table schema: " + MetadataHandler.extractTableMetadata(table) + "\n" + "Size: " + fileSize + "\n" +
+                        "Count records: " + records);
                 return;
             }
         }
 
-        System.out.println("the table [" + pair.getArgs() + "] does not exist");
+        System.out.println("The table [" + pair.getArgs() + "] does not exist.");
     }
 
     private void executeInsert(Pair pair) throws InvalidOperationException {
         String[] parts = StringUtils.split(pair.getArgs(), ' ');
         String tableName = parts[1];
-        String[] args = Extractor.extractArgs(parts[2]);
+        int indexOfValuesKeyword = StringUtils.indexOf(pair.getArgs(), "values");
+        String query = StringUtils.substring(pair.getArgs(), indexOfValuesKeyword + "values".length());
+
+        String[] args = Extractor.extractArgs(query);
         DataPair[] dataPairs = DataPair.calculate(args);
         String tableMetadata = MetadataHandler.extractTableMetadata(tableName);
         Column[] columns = Extractor.extractColumns(tableMetadata);
@@ -128,23 +130,24 @@ public class Executor {
     }
 
     private void executeDelete(Pair pair) throws InvalidOperationException {
-        String[] p = StringUtils.split(pair.getArgs(), ' ');
-        String tableName = p[1];
+        String[] parts = StringUtils.split(pair.getArgs(), ' ');
+        String tableName = parts[1];
+        String[] lines = FileSystemExecutor.loadInMemory(tableName);
 
         if (StringUtils.contains(pair.getArgs(), Keyword.WHERE.getValue())) {
-            Clause clause = Extractor.extractClause(p[p.length - 1]);
-            String[] lines = FileSystemExecutor.loadInMemory(tableName);
+            String substringAfterWhere = StringUtils.extractSubstringAfter(pair.getArgs(), Keyword.WHERE.getValue());
+            Clause clause = Extractor.extractClause(substringAfterWhere);
             String tableMetadata = MetadataHandler.extractTableMetadata(tableName);
             int indexOfOpeningBracket = StringUtils.indexOf(tableMetadata, '(');
             int indexOfClosingBracket = StringUtils.indexOf(tableMetadata, ')');
             Column[] columns = Extractor.extractColumns(StringUtils.substring(tableMetadata, indexOfOpeningBracket + 1, indexOfClosingBracket));
             TypeValuePair[][] pairs = match(lines, columns);
-            String[] toWrite = applyDelete(clause, pairs);
 
+            String[] toWrite = applyDelete(clause, pairs);
             if (toWrite.length == 0) {
                 FileSystemExecutor.clear(tableName);
             } else {
-                FileSystemExecutor.override(tableName, toWrite);
+                FileSystemExecutor.replaceFileContents(tableName, toWrite);
             }
 
             System.out.println("Rows affected: " + (pairs.length - toWrite.length));
@@ -161,18 +164,19 @@ public class Executor {
         boolean containsWhere = StringUtils.contains(pair.getArgs(), Keyword.WHERE.getValue());
 
         if (parts[0].equals(Keyword.STAR.getValue())) {
-            executeSelectAll(parts, containsWhere);
+            executeSelectAll(StringUtils.join(parts, " "), containsWhere);
         } else {
             if (parts[0].equals(Keyword.DISTINCT.getValue())) {
                 parts = StringUtils.collectFromIndex(parts, 1);
-                executeSelectSpecificColumns(parts, containsWhere, true);
+                executeSelectSpecificColumns(StringUtils.join(parts, " "), containsWhere, true);
             } else {
-                executeSelectSpecificColumns(parts, containsWhere, false);
+                executeSelectSpecificColumns(StringUtils.join(parts, " "), containsWhere, false);
             }
         }
     }
 
-    private void executeSelectSpecificColumns(String[] parts, boolean containsWhere, boolean distinct) throws InvalidOperationException {
+    private void executeSelectSpecificColumns(String args, boolean containsWhere, boolean distinct) throws InvalidOperationException {
+        String[] parts = StringUtils.split(args, " ");
         String[] cols = StringUtils.split(parts[0], ',');
         String tableName = parts[2];
         String[] lines = FileSystemExecutor.loadInMemory(tableName);
@@ -183,7 +187,8 @@ public class Executor {
         TypeValuePair[][] pairs = match(lines, columns);
 
         if (containsWhere) {
-            Clause clause = Extractor.extractClause(parts[parts.length - 1]);
+            String substringAfterWhere = StringUtils.extractSubstringAfter(args, Keyword.WHERE.getValue());
+            Clause clause = Extractor.extractClause(substringAfterWhere);
             pairs = applySelectExtractTypeValuePairs(clause, pairs);
         }
 
@@ -253,22 +258,14 @@ public class Executor {
         return result;
     }
 
-    private String[] extractColOrderFromMetadata(TypeValuePair[] typeValuePairs) {
-        String[] result = new String[typeValuePairs.length];
-        int idx = 0;
-
-        for (TypeValuePair typeValuePair : typeValuePairs) {
-            result[idx++] = typeValuePair.getColName();
-        }
-        return result;
-    }
-
-    private void executeSelectAll(String[] parts, boolean containsWhere) throws InvalidOperationException {
+    private void executeSelectAll(String args, boolean containsWhere) throws InvalidOperationException {
+        String[] parts = StringUtils.split(args, " ");
         String tableName = parts[2];
         String[] lines = FileSystemExecutor.loadInMemory(tableName);
 
         if (containsWhere) {
-            Clause clause = Extractor.extractClause(parts[parts.length - 1]);
+            String substringAfterWhere = StringUtils.extractSubstringAfter(args, Keyword.WHERE.getValue());
+            Clause clause = Extractor.extractClause(substringAfterWhere);
             String tableMetadata = MetadataHandler.extractTableMetadata(tableName);
             int indexOfOpeningBracket = StringUtils.indexOf(tableMetadata, '(');
             int indexOfClosingBracket = StringUtils.indexOf(tableMetadata, ')');
@@ -455,7 +452,8 @@ public class Executor {
             String[] splittedLines = StringUtils.split(lines[i], ',');
 
             for (int j = 0; j < columns.length; j++) {
-                typeValuePairs[i][j] = TypeValuePair.of(columns[j].getName(), splittedLines[j], columns[j].getSupportedType());
+                TypeValuePair typeValuePair = TypeValuePair.of(columns[j].getName(), splittedLines[j], columns[j].getSupportedType());
+                typeValuePairs[i][j] = typeValuePair;
             }
         }
 

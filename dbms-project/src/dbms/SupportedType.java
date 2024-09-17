@@ -26,6 +26,7 @@ public enum SupportedType {
             }
 
             return false;
+
         } catch (Exception e) {
             return false;
         }

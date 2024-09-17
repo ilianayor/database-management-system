@@ -14,7 +14,7 @@ public class DataPair {
             if (SupportedType.isInteger(arg)) {
                 DataPair pair = new DataPair(arg, SupportedType.INTEGER);
                 result[index++] = pair;
-            } else if (SupportedType.isString(arg)) {
+            }  else if (SupportedType.isString(arg)) {
                 DataPair pair = new DataPair(arg, SupportedType.STRING);
                 result[index++] = pair;
             } else if (SupportedType.isDate(arg)) {

@@ -1,5 +1,6 @@
 package dbms.validator.query;
 
+import dbms.Printer;
 import dbms.exceptions.InvalidArgsException;
 import dbms.executor.filesystem.FileSystemExecutor;
 import dbms.executor.metadata.MetadataHandler;
@@ -10,40 +11,49 @@ import dbms.keyword.Keyword;
 import dbms.strings.StringUtils;
 
 public class InsertValidator {
-    private static final int VALID_NUMBER_OF_SPACES = 2;
+    private static final int VALID_NUMBER_OF_SPACES = 1;
     private static final String VALUES_PREFIX = "values";
 
     public static void validateInsert(String args) throws InvalidArgsException {
         String[] parts = StringUtils.split(args, ' ');
 
-        validateNumberOfSpaces(parts.length - 1);
+        validateNumberOfSpaces(extractNumberOfSpaces(args));
         validateIntoKeyword(parts[0]);
         validateTableExists(parts[1]);
         validateValuesPrefix(parts[2]);
-        validateDataTypes(parts[2], parts[1]);
+
+        int indexOfValuesKeyword = StringUtils.indexOf(args, VALUES_PREFIX);
+        String query = StringUtils.substring(args, indexOfValuesKeyword + VALUES_PREFIX.length());
+        validateDataTypes(query, parts[1]);
+    }
+
+    private static int extractNumberOfSpaces(String args) {
+        int indexOfValuesKeyword = StringUtils.indexOf(args, VALUES_PREFIX);
+        String substr = StringUtils.substring(args, 0, indexOfValuesKeyword - 1);
+        return StringUtils.split(substr, ' ').length - 1;
     }
 
     private static void validateNumberOfSpaces(int numberOfSpaces) throws InvalidArgsException {
         if (numberOfSpaces != VALID_NUMBER_OF_SPACES) {
-            throw new InvalidArgsException("invalid args for insert");
+            throw new InvalidArgsException("Invalid args for insert.");
         }
     }
 
     private static void validateIntoKeyword(String str) throws InvalidArgsException {
         if (!str.equals(Keyword.INTO.getValue())) {
-            throw new InvalidArgsException("expected into");
+            throw new InvalidArgsException("Expected into keyword.");
         }
     }
 
     private static void validateTableExists(String tableName) throws InvalidArgsException {
-        if (!FileSystemExecutor.existFileWithName(tableName)) {
-            throw new InvalidArgsException("table [" + tableName + "] does not exist");
+        if (!FileSystemExecutor.existsFileWithName(tableName)) {
+            throw new InvalidArgsException("Table [" + tableName + "] does not exist.");
         }
     }
 
     private static void validateValuesPrefix(String str) throws InvalidArgsException {
         if (!StringUtils.startsWith(str, VALUES_PREFIX)) {
-            throw new InvalidArgsException("expected values keyword");
+            throw new InvalidArgsException("Expected values keyword.");
         }
     }
 
@@ -55,10 +65,10 @@ public class InsertValidator {
             DataPair[] dataPairs = DataPair.calculate(args);
 
             if (!Query.match(dataPairs, tableMetadata)) {
-                throw new InvalidArgsException("data type mismatch");
+                throw new InvalidArgsException("Data type mismatch.");
             }
         } catch (Exception e) {
-            throw new InvalidArgsException("operation failed in data types validation");
+            throw new InvalidArgsException("Operation failed in data types validation.");
         }
     }
 }

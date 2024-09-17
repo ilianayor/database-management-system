@@ -1,6 +1,5 @@
 package dbms.executor.query;
 
-import dbms.exceptions.InvalidArgsException;
 import dbms.executor.table.Column;
 import dbms.extractor.Extractor;
 import dbms.strings.StringUtils;
@@ -35,6 +34,7 @@ public class Query {
                     return false;
                 }
             }
+
             return true;
         } catch (Exception e) {
             return false;

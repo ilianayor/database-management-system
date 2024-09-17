@@ -19,6 +19,15 @@ public class Column {
         this.defaultValue = "";
     }
 
+    @Override
+    public String toString() {
+        return "Column{" +
+                "supportedType=" + supportedType +
+                ", name='" + name + '\'' +
+                ", defaultValue='" + defaultValue + '\'' +
+                '}';
+    }
+
     public String getName() {
         return name;
     }

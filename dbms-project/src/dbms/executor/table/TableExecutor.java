@@ -7,18 +7,17 @@ import java.io.File;
 
 public class TableExecutor {
     public void createTable(Table table) throws InvalidOperationException {
-        String tableName = table.getName();
-
-        if (FileSystemExecutor.existFileWithName(tableName)) {
-            throw new InvalidOperationException("table with name: [" + tableName + "] already exists");
+        if (table == null) {
+            return;
         }
 
+        String tableName = table.getName();
         FileSystemExecutor.createFile(tableName);
     }
 
     public void dropTable(String tableName) throws InvalidOperationException {
-        if (!FileSystemExecutor.existFileWithName(tableName)) {
-            throw new InvalidOperationException("table with name: [" + tableName + "] does not exist");
+        if (tableName == null) {
+            return;
         }
 
         FileSystemExecutor.deleteFile(tableName);

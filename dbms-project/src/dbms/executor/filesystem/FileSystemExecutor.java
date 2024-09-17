@@ -2,8 +2,7 @@ package dbms.executor.filesystem;
 
 import dbms.exceptions.InvalidOperationException;
 import dbms.exceptions.table.create.TableCreationException;
-import dbms.executor.metadata.MetadataHandler;
-import dbms.strings.StringUtils;
+
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -16,7 +15,7 @@ public class FileSystemExecutor {
         try {
             Files.createFile(Path.of(name));
         } catch (Exception e) {
-            throw new TableCreationException("fail creation failed for table: [" + name + "]");
+            throw new TableCreationException("File creation failed for table: [" + name + "].", e);
         }
     }
 
@@ -24,7 +23,7 @@ public class FileSystemExecutor {
         try {
             Files.delete(Path.of(name));
         } catch (Exception e) {
-            throw new TableCreationException("fail creation failed for table: [" + name + "]");
+            throw new TableCreationException("File deletion failed for table: [" + name + "].", e);
         }
     }
 
@@ -32,18 +31,18 @@ public class FileSystemExecutor {
         try (FileWriter writer = new FileWriter(fileName, true)) {
             writer.write(str);
         } catch (Exception e) {
-            throw new InvalidOperationException("failed to write to file");
+            throw new InvalidOperationException("Failed to append data to the file: " + fileName, e);
         }
     }
 
-    public static void override(String fileName, String[] lines) throws InvalidOperationException {
+    public static void replaceFileContents(String fileName, String[] lines) throws InvalidOperationException {
         try (FileWriter writer = new FileWriter(fileName, false)) {
             for (String line : lines) {
                 writer.write(line);
                 writer.write(System.lineSeparator());
             }
         } catch (Exception e) {
-            throw new InvalidOperationException("failed to write to file");
+            throw new InvalidOperationException("Unable to replace contents of file: " + fileName, e);
         }
     }
 
@@ -51,7 +50,7 @@ public class FileSystemExecutor {
         try (FileWriter writer = new FileWriter(fileName, false)) {
             writer.write("");
         } catch (Exception e) {
-            throw new InvalidOperationException("failed clear file");
+            throw new InvalidOperationException("Failed to clear file: " + fileName, e);
         }
     }
 
@@ -59,11 +58,11 @@ public class FileSystemExecutor {
         try {
             return Files.size(Path.of(fileName));
         } catch (Exception e) {
-            throw new InvalidOperationException("failed to get file size");
+            throw new InvalidOperationException("Failed to get file size for file: " + fileName, e);
         }
     }
 
-    public static boolean existFileWithName(String name) {
+    public static boolean existsFileWithName(String name) {
         return Files.exists(Path.of(name));
     }
 
@@ -80,7 +79,7 @@ public class FileSystemExecutor {
 
             return lines;
         } catch (Exception e) {
-            throw new InvalidOperationException("update metadata failed", e);
+            throw new InvalidOperationException("Failed to count lines in file: " + fileName, e);
         }
     }
 
@@ -95,10 +94,9 @@ public class FileSystemExecutor {
                     lines[index++] = line;
                 }
             }
-
             return lines;
         } catch (Exception e) {
-            throw new InvalidOperationException("update metadata failed", e);
+            throw new InvalidOperationException("Failed to load file into memory: " + fileName, e);
         }
     }
 }

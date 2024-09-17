@@ -1,5 +1,7 @@
 package dbms.strings;
 
+import dbms.keyword.Keyword;
+
 public class StringUtils {
     public static int indexOf(String str, char c) {
         for (int i = 0; i < str.length(); i++) {
@@ -19,6 +21,15 @@ public class StringUtils {
         }
 
         return sb.toString();
+    }
+
+    public static String extractSubstringAfter(String args, String keyword) {
+        int indexOfWhereKeyword = StringUtils.indexOf(args, keyword);
+        int offset = indexOfWhereKeyword + keyword.length();
+        String substr = StringUtils.substring(args, offset);
+        int indexOfFirstNonEmptyLetter = StringUtils.extractIndexOfFirstNonEmptyLetter(substr);
+
+        return StringUtils.substring(args, indexOfFirstNonEmptyLetter + offset);
     }
 
     public static String substring(String str, int start) {
@@ -257,6 +268,20 @@ public class StringUtils {
                 }
             }
         }
+    }
+
+    public static int extractIndexOfFirstNonEmptyLetter(String s) {
+        for(int i = 0; i < s.length(); i++) {
+            if(s.charAt(i) >= 'a' && s.charAt(i) <= 'z') {
+                return i;
+            }
+
+            if(s.charAt(i) >= 'A' && s.charAt(i) <= 'Z') {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     public static int countUnique(String[] strings) {

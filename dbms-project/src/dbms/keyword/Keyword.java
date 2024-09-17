@@ -5,7 +5,8 @@ public enum Keyword {
     DISTINCT("distinct"),
     INTO("into"),
     FROM("from"),
-    STAR("*");
+    STAR("*"),
+    NOT("not");
 
     private final String value;
 

@@ -8,9 +8,7 @@ import dbms.validator.query.QueryValidator;
 import dbms.validator.table.TableValidator;
 
 public class InputValidator {
-    public static void validate(Pair pair) throws
-            InvalidCommandNameException,
-            InvalidArgsException {
+    public static void validate(Pair pair) throws InvalidCommandNameException, InvalidArgsException {
         validateCommand(pair.getCommandName());
         validateArgs(pair);
     }
@@ -26,7 +24,7 @@ public class InputValidator {
         }
 
         if (command == null) {
-            throw new InvalidCommandNameException("command is unknown");
+            throw new InvalidCommandNameException("Command is unknown.");
         }
     }
 
